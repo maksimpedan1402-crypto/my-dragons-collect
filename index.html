@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Коллекция Драконов</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; }
+        .search-box { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .stats { margin-bottom: 15px; font-weight: bold; text-align: center; color: #27ae60; }
+        .dragon-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; transition: background 0.2s; }
+        .dragon-item:hover { background: #f9f9f9; }
+        .dragon-item input { margin-right: 15px; transform: scale(1.2); cursor: pointer; }
+        .dragon-item.checked { color: #888; text-decoration: line-through; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>My Dragon Collection</h1>
+    
+    <div class="stats" id="stats">Собрано: 0 из 0</div>
+    
+    <input type="text" id="search" class="search-box" placeholder="Поиск дракона...">
+    
+    <div id="dragonList">
+        </div>
+</div>
+
+<script>
+    // Ваш список (сокращенно для примера, добавьте остальные так же)
+    const dragons = [
+        "Cocovira (FM) 75", "Rocirus (FM) 76", "Atarix", "Saurium (FM) 1", "Tigrilia", 
+        "Tuskaryn", "Dexyn", "Geliklen", "Palus", "Bizaltidath (FM) 2", "Magmip (FM) 3",
+        "Numine", "Venu", "Alrenoth", "Glacegar (FM)", "Howler", "Sylva (FM) 38",
+        "Amphyll (FM) 39", "Enkylous", "Krekiz", "Coralina", "Taraka", "Agricos (FM) 40",
+        "Dunvolth", "Ferorex (FM) 41", "Khepera", "Bisonture", "Mother Dragon (FM) 42",
+        "Taihoa", "Zeipera", "Neroxide", "Radidon", "Venid (FM) 56", "Chronocus",
+        "Rhyndac", "Soukeyi", "Zinthors", "Karukiri", "Mistrasune", "Onagajin",
+        "Suiikipon", "Yaruakura", "Veidreki (FM) 57", "Alatura (FM) 58", "Viridik (FM) 59",
+        "Stymelisk (FM) 60", "Fulong (FM) 61", "Rozora (FM) 62", "Ovicirus", "Tsukuizan (FM) 63",
+        "Amaris (FM) 64", "Nakahaii (FM) 65", "Varana", "Nor’gan (FM) 4", "Hoarusn", 
+        "Woodluma", "Eisendrache (FM) 5", "Aeroseys (FM) 6", "Yueshi (FM) 7", "Fernifex (FM) 8",
+        "Vulpiruth (FM) 9", "Makoura", "Lum Luenh", "Procaphan", "Chrysaloom", "Amoonita (FM) 10",
+        "Tornedius (FM) 11", "Harvitius (FM) 12", "Astraeisis (FM) 13", "Thorkonyx",
+        "Hongliang (FM) 14", "Fleurianthus", "Cirquemaar", "Diraixos", "Quasaldrus",
+        "Pagulau (FM) 15", "Iridesia", "Trametos", "Tempiritus (FM) 43", "Mosuraki",
+        "Gyngefared (FM) 44", "Arielisces (FM) 45", "Wuonghou", "Sunfloris", "Carnealgon",
+        "Tenebis", "Caelydris", "Pananisea (FM) 46", "Caunaris", "Calimaki", "Phyllantis",
+        "Geordegourd", "Snoballista", "Tronat", "Voltstorm (FM) 47", "Fueguin", "Malupentys",
+        "Glaquacus", "Sentalius", "Allpehourn", "Ancient Skriffei", "Skriffei (FM) 66",
+        "Ancient Tosknir", "Tosknir (FM) 67", "Avefir", "Firifeller (FM) 68", "Hielochiim",
+        "Nadaler", "Penguitus", "Polairistel", "Stratalix", "Vyreas", "Yulereinn", "Tianma",
+        "Cutiepatoo (FM) 69", "Desygual (FM) 70", "Fayrah (FM) 71", "Tarotta", "Vulcoramor",
+        "Lucklif", "Ancient Aranga (FM) 16", "Aranga (FM) 17", "Ayatrice", "Catruca",
+        "Falugeis (FM) 18", "Gaulyra (FM) 19", "Mielebee (FM) 20", "Skyrix (FM) 21",
+        "Verscervus", "Yggdraten", "Cybernid", "Gundrakken (FM) 22", "Mechanoxide (FM) 23",
+        "Motorouk (FM) 24", "Robodon", "Roborus X", "Xerthos (FM) 25", "Casirius (FM) 48",
+        "Cosmalisk (FM) 49", "Cynphion-Noire", "Hexalios (FM) 50", "Lunaesol", "Quahtona",
+        "Quetzaloctli", "Solarizon (FM) 51", "Volkumos (FM) 52", "Araneaix", "Cryptillow (FM) 53",
+        "Djaevelhest", "Dratheros", "Dysuva", "Goliatomb", "Khorgeryn", "Nightmare Paranox",
+        "Paranox (FM) 54", "Paukiki (FM) 55", "Scrawei", "Skelltor", "Aurutentia", "Avarakuma",
+        "Bylendarach", "Gyrocopter (FM) 72", "Ignicaris", "Kikien", "Ladonix", "Lumenigh",
+        "Lyria (FM) 73", "Oroalas", "Paladianos", "Silvestratus", "Stellaris (FM) 74",
+        "Taligris", "Tlacocun", "Seikarin", "Lepilon", "Geoteryx", "Smokgien", "Balgunyur",
+        "Valkiero", "Constello (FM) 26", "Eryndiorn (FM) 27", "Guilmoros (FM) 28",
+        "Moixaura (FM) 29", "Terruak (FM) 30", "Uheailes (FM) 31", "Xellatruce (FM) 32",
+        "Atravanta", "Nyxavoid (FM) 33", "Syliru", "Featherfang", "Aethereus (FM) 34",
+        "Corrupted Chronocus", "Kostragula (FM) 35", "Noctorius (FM) 36", "Ortarouk (FM) 37",
+        "Impiavolo (FM)", "Caudembris", "Goelica", "Khalknirik", "Verdrakor",
+        "Source Dragon of Energy", "Source Dragon of Motion", "Riyu", "Mountain Dragon"
+    ];
+
+    const listContainer = document.getElementById('dragonList');
+    const searchInput = document.getElementById('search');
+    const statsContainer = document.getElementById('stats');
+
+    // Загрузка данных из памяти браузера
+    const savedData = JSON.parse(localStorage.getItem('dragonCollection')) || {};
+
+    function updateStats() {
+        const checkedCount = Object.values(savedData).filter(v => v).length;
+        statsContainer.innerText = `Собрано: ${checkedCount} из ${dragons.length}`;
+    }
+
+    function renderList() {
+        listContainer.innerHTML = '';
+        dragons.forEach((name, index) => {
+            const isChecked = savedData[name] || false;
+            
+            const div = document.createElement('div');
+            div.className = `dragon-item ${isChecked ? 'checked' : ''}`;
+            div.innerHTML = `
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDragon('${name}')">
+                <span>${name}</span>
+            `;
+            listContainer.appendChild(div);
+        });
+        updateStats();
+    }
+
+    window.toggleDragon = (name) => {
+        savedData[name] = !savedData[name];
+        localStorage.setItem('dragonCollection', JSON.stringify(savedData));
+        renderList();
+    };
+
+    // Поиск
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const items = document.querySelectorAll('.dragon-item');
+        items.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            item.classList.toggle('hidden', !text.includes(term));
+        });
+    });
+
+    renderList();
+</script>
+
+</body>
+</html>
