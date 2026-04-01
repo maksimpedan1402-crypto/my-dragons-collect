@@ -8,7 +8,7 @@
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #2c3e50; }
         .search-box { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .stats { margin-bottom: 15px; font-weight: bold; text-align: center; color: #27ae60; }
+        .stats { margin-bottom: 15px; font-weight: bold; text-align: center; color: #27ae60; position: sticky; top: 0; background: white; padding: 10px; }
         .dragon-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; transition: background 0.2s; }
         .dragon-item:hover { background: #f9f9f9; }
         .dragon-item input { margin-right: 15px; transform: scale(1.2); cursor: pointer; }
@@ -20,17 +20,12 @@
 
 <div class="container">
     <h1>My Dragon Collection</h1>
-    
     <div class="stats" id="stats">Собрано: 0 из 0</div>
-    
     <input type="text" id="search" class="search-box" placeholder="Поиск дракона...">
-    
-    <div id="dragonList">
-        </div>
+    <div id="dragonList"></div>
 </div>
 
 <script>
-    // Ваш список (сокращенно для примера, добавьте остальные так же)
     const dragons = [
         "Cocovira", "Rocirus", "Atarix", "Saurium", "Tigrilia", "Tuskaryn", "Dexyn", "Geliklen", 
         "Palus", "Bizaltidath", "Magmip", "Numine", "Venu", "Alrenoth", "Glacegar", "Howler", 
@@ -56,15 +51,12 @@
         "Geoteryx", "Smokgien", "Balgunyur", "Valkiero", "Constello", "Eryndiorn", "Guilmoros", "Moixaura", "Terruak", "Uheailes", "Xellatruce",
         "Atravanta", "Nyxavoid", "Syliru", "Featherfang", "Aethereus", "Corrupted Chronocus", "Kostragula", "Noctorius", "Ortarouk", "Impiavolo", 
         "Caudembris", "Goelica", "Khalknirik", "Verdrakor", "Source Dragon of Energy", "Source Dragon of Motion", "Riyu", "Mountain Dragon"
-    ];
-    ];
-   
+    ]; // Исправлено здесь (лишние скобки удалены)
 
     const listContainer = document.getElementById('dragonList');
     const searchInput = document.getElementById('search');
     const statsContainer = document.getElementById('stats');
 
-    // Загрузка данных из памяти браузера
     const savedData = JSON.parse(localStorage.getItem('dragonCollection')) || {};
 
     function updateStats() {
@@ -74,32 +66,42 @@
 
     function renderList() {
         listContainer.innerHTML = '';
-        dragons.forEach((name, index) => {
-            const isChecked = savedData[name] || false;
-            
+        const fragment = document.createDocumentFragment(); // Для ускорения отрисовки
+
+        dragons.forEach((name) => {
+            const isChecked = !!savedData[name];
             const div = document.createElement('div');
             div.className = `dragon-item ${isChecked ? 'checked' : ''}`;
+            div.id = `dragon-${name.replace(/\s+/g, '_')}`; // ID для быстрого поиска
+            
             div.innerHTML = `
                 <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDragon('${name}')">
                 <span>${name}</span>
             `;
-            listContainer.appendChild(div);
+            fragment.appendChild(div);
         });
+        listContainer.appendChild(fragment);
         updateStats();
     }
 
     window.toggleDragon = (name) => {
         savedData[name] = !savedData[name];
         localStorage.setItem('dragonCollection', JSON.stringify(savedData));
-        renderList();
+        
+        // Обновляем визуальное состояние без полной перерисовки
+        const elementId = `dragon-${name.replace(/\s+/g, '_')}`;
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.classList.toggle('checked', savedData[name]);
+        }
+        updateStats();
     };
 
-    // Поиск
     searchInput.addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         const items = document.querySelectorAll('.dragon-item');
         items.forEach(item => {
-            const text = item.innerText.toLowerCase();
+            const text = item.querySelector('span').innerText.toLowerCase();
             item.classList.toggle('hidden', !text.includes(term));
         });
     });
