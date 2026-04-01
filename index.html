@@ -2,111 +2,141 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Коллекция Драконов</title>
+    <title>Dragon Collection Tracker</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #2c3e50; }
-        .search-box { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .stats { margin-bottom: 15px; font-weight: bold; text-align: center; color: #27ae60; position: sticky; top: 0; background: white; padding: 10px; }
-        .dragon-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; transition: background 0.2s; }
-        .dragon-item:hover { background: #f9f9f9; }
-        .dragon-item input { margin-right: 15px; transform: scale(1.2); cursor: pointer; }
-        .dragon-item.checked { color: #888; text-decoration: line-through; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eceff1; padding: 20px; color: #2c3e50; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a237e; margin-bottom: 5px; }
+        .stats { font-size: 1.1rem; text-align: center; margin-bottom: 20px; color: #43a047; font-weight: bold; }
+        
+        /* Категории */
+        .category-section { margin-bottom: 30px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
+        .category-title { background: #3f51b5; color: white; padding: 10px 15px; margin: 0; font-size: 1.2rem; cursor: pointer; display: flex; justify-content: space-between; }
+        
+        .dragon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; padding: 15px; background: #fff; }
+        
+        .dragon-item { display: flex; align-items: center; padding: 8px; border-radius: 6px; border: 1px solid #f0f0f0; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .dragon-item:hover { background: #f5f5f5; }
+        .dragon-item input { margin-right: 10px; }
+        .dragon-item.checked { background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32; }
+        
+        .search-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #dee2e6; border-radius: 8px; box-sizing: border-box; }
+        .btn-share { width: 100%; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
+        
+        .view-only { pointer-events: none; opacity: 0.8; }
         .hidden { display: none; }
+        .banner { background: #fff3e0; color: #e65100; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>My Dragon Collection</h1>
-    <div class="stats" id="stats">Собрано: 0 из 0</div>
+    <h1 id="mainTitle">Моя коллекция драконов</h1>
+    <div id="viewBanner" class="banner hidden">Режим просмотра (коллекция друга)</div>
+    <div class="stats" id="stats">Загрузка...</div>
+    
     <input type="text" id="search" class="search-box" placeholder="Поиск дракона...">
-    <div id="dragonList"></div>
+    <button id="shareBtn" class="btn-share" onclick="shareProgress()">🔗 Скопировать ссылку для друзей</button>
+
+    <div id="categoriesContainer"></div>
 </div>
 
 <script>
-    const dragons = [
-        "Cocovira", "Rocirus", "Atarix", "Saurium", "Tigrilia", "Tuskaryn", "Dexyn", "Geliklen", 
-        "Palus", "Bizaltidath", "Magmip", "Numine", "Venu", "Alrenoth", "Glacegar", "Howler", 
-        "Sylva", "Amphyll", "Enkylous", "Krekiz", "Coralina", "Taraka", "Agricos", "Dunvolth", 
-        "Ferorex", "Khepera", "Bisonture", "Mother Dragon", "Taihoa", "Zeipera", "Neroxide", 
-        "Radidon", "Venid", "Chronocus", "Rhyndac", "Soukeyi", "Zinthors", "Karukiri", 
-        "Mistrasune", "Onagajin", "Suiikipon", "Yaruakura", "Veidreki", "Alatura", "Viridik", 
-        "Stymelisk", "Fulong", "Rozora", "Ovicirus", "Tsukuizan", "Amaris", "Nakahaii", "Varana", 
-        "Nor’gan", "Hoarusn", "Woodluma", "Eisendrache", "Aeroseys", "Yueshi", "Fernifex", "Vulpiruth", 
-        "Makoura", "Lum Luenh", "Procaphan", "Chrysaloom", "Amoonita", "Tornedius", "Harvitius", "Astraeisis", 
-        "Thorkonyx", "Hongliang", "Fleurianthus", "Cirquemaar", "Diraixos", "Quasaldrus", "Pagulau", "Iridesia", 
-        "Trametos", "Tempiritus", "Mosuraki", "Gyngefared", "Arielisces", "Wuonghou", "Sunfloris", "Carnealgon", 
-        "Tenebis", "Caelydris", "Pananisea", "Caunaris", "Calimaki", "Phyllantis", "Geordegourd", "Snoballista", 
-        "Tronat", "Voltstorm", "Fueguin", "Malupentys", "Glaquacus", "Sentalius", "Allpehourn", "Ancient Skriffei", 
-        "Skriffei", "Ancient Tosknir", "Tosknir", "Avefir", "Firifeller", "Hielochiim", "Nadaler", "Penguitus", 
-        "Polairistel", "Stratalix", "Vyreas", "Yulereinn", "Tianma", "Cutiepatoo", "Desygual", "Fayrah", "Tarotta", 
-        "Vulcoramor", "Lucklif", "Ancient Aranga", "Aranga", "Ayatrice", "Catruca", "Falugeis", "Gaulyra", "Mielebee", 
-        "Skyrix", "Verscervus", "Yggdraten", "Cybernid", "Gundrakken", "Mechanoxide", "Motorouk", "Robodon", "Roborus X",
-        "Xerthos", "Casirius", "Cosmalisk", "Cynphion-Noire", "Hexalios", "Lunaesol", "Quahtona", "Quetzaloctli", "Solarizon",
-        "Volkumos", "Araneaix", "Cryptillow", "Djaevelhest", "Dratheros", "Dysuva", "Goliatomb", "Khorgeryn", "Nightmare Paranox",
-        "Paranox", "Paukiki", "Scrawei", "Skelltor", "Aurutentia", "Avarakuma", "Bylendarach", "Gyrocopter", "Ignicaris", "Kikien", 
-        "Ladonix", "Lumenigh", "Lyria", "Oroalas", "Paladianos", "Silvestratus", "Stellaris", "Taligris", "Tlacocun", "Seikarin", "Lepilon",
-        "Geoteryx", "Smokgien", "Balgunyur", "Valkiero", "Constello", "Eryndiorn", "Guilmoros", "Moixaura", "Terruak", "Uheailes", "Xellatruce",
-        "Atravanta", "Nyxavoid", "Syliru", "Featherfang", "Aethereus", "Corrupted Chronocus", "Kostragula", "Noctorius", "Ortarouk", "Impiavolo", 
-        "Caudembris", "Goelica", "Khalknirik", "Verdrakor", "Source Dragon of Energy", "Source Dragon of Motion", "Riyu", "Mountain Dragon"
-    ]; // Исправлено здесь (лишние скобки удалены)
-
-    const listContainer = document.getElementById('dragonList');
-    const searchInput = document.getElementById('search');
-    const statsContainer = document.getElementById('stats');
-
-    const savedData = JSON.parse(localStorage.getItem('dragonCollection')) || {};
-
-    function updateStats() {
-        const checkedCount = Object.values(savedData).filter(v => v).length;
-        statsContainer.innerText = `Собрано: ${checkedCount} из ${dragons.length}`;
-    }
-
-    function renderList() {
-        listContainer.innerHTML = '';
-        const fragment = document.createDocumentFragment(); // Для ускорения отрисовки
-
-        dragons.forEach((name) => {
-            const isChecked = !!savedData[name];
-            const div = document.createElement('div');
-            div.className = `dragon-item ${isChecked ? 'checked' : ''}`;
-            div.id = `dragon-${name.replace(/\s+/g, '_')}`; // ID для быстрого поиска
-            
-            div.innerHTML = `
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDragon('${name}')">
-                <span>${name}</span>
-            `;
-            fragment.appendChild(div);
-        });
-        listContainer.appendChild(fragment);
-        updateStats();
-    }
-
-    window.toggleDragon = (name) => {
-        savedData[name] = !savedData[name];
-        localStorage.setItem('dragonCollection', JSON.stringify(savedData));
-        
-        // Обновляем визуальное состояние без полной перерисовки
-        const elementId = `dragon-${name.replace(/\s+/g, '_')}`;
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.classList.toggle('checked', savedData[name]);
-        }
-        updateStats();
+    // РАЗДЕЛЕНИЕ ПО КАТЕГОРИЯМ
+    const dragonData = {
+        "Мировые (World)": ["Cocovira", "Rocirus", "Saurium", "Dexyn", "Numine", "Venu", "Alrenoth", "Amphyll", "Sylva"],
+        "Событийные (Event)": ["Atarix", "Tigrilia", "Tuskaryn", "Geliklen", "Palus", "Glacegar", "Howler", "Skriffei", "Tosknir"],
+        "Сезонные (Season)": ["Fulong", "Tsukuizan", "Amaris", "Nakahaii", "Viridik", "Alatura", "Stymelisk"],
+        "Особые / Редкие": ["Veidreki", "Rozora", "Ovicirus", "Ancient Aranga", "Aranga", "Corrupted Chronocus", "Ancient Skriffei"],
+        "Остальные": ["Chronocus", "Rhyndac", "Soukeyi", "Zinthors", "Karukiri", "Mistrasune", "Onagajin", "Suiikipon", "Yaruakura", "Varana", "Nor’gan", "Hoarusn", "Woodluma", "Eisendrache", "Aeroseys", "Yueshi", "Fernifex", "Vulpiruth", "Makoura", "Lum Luenh", "Procaphan", "Chrysaloom"]
+        // Ты можешь добавлять свои категории и переносить туда драконов
     };
 
-    searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const items = document.querySelectorAll('.dragon-item');
-        items.forEach(item => {
-            const text = item.querySelector('span').innerText.toLowerCase();
-            item.classList.toggle('hidden', !text.includes(term));
-        });
-    });
+    // Собираем всех в один плоский список для поиска и кодирования
+    const allDragons = Object.values(dragonData).flat();
+    let collection = JSON.parse(localStorage.getItem('myDragonsV2')) || {};
+    let isViewMode = false;
 
-    renderList();
+    // Проверка ссылки друга
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('data');
+
+    if (sharedData) {
+        isViewMode = true;
+        document.getElementById('viewBanner').classList.remove('hidden');
+        document.getElementById('shareBtn').classList.add('hidden');
+        document.getElementById('mainTitle').innerText = "Коллекция друга";
+        decodeData(sharedData);
+    }
+
+    function decodeData(data) {
+        const indexes = data.split(',').map(Number);
+        collection = {};
+        indexes.forEach(idx => { if(allDragons[idx]) collection[allDragons[idx]] = true; });
+    }
+
+    function shareProgress() {
+        const indexes = [];
+        allDragons.forEach((name, idx) => { if(collection[name]) indexes.push(idx); });
+        const url = `${window.location.origin}${window.location.pathname}?data=${indexes.join(',')}`;
+        navigator.clipboard.writeText(url).then(() => alert("Ссылка скопирована!"));
+    }
+
+    function render() {
+        const container = document.getElementById('categoriesContainer');
+        container.innerHTML = '';
+        let totalOwned = 0;
+
+        for (const [catName, list] of Object.entries(dragonData)) {
+            const section = document.createElement('div');
+            section.className = 'category-section';
+            
+            const title = document.createElement('div');
+            title.className = 'category-title';
+            title.innerHTML = `<span>${catName}</span>`;
+            
+            const grid = document.createElement('div');
+            grid.className = 'dragon-grid';
+
+            list.forEach(name => {
+                const isChecked = collection[name] || false;
+                if(isChecked) totalOwned++;
+
+                const item = document.createElement('div');
+                item.className = `dragon-item ${isChecked ? 'checked' : ''} ${isViewMode ? 'view-only' : ''}`;
+                item.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''}><span>${name}</span>`;
+                
+                if(!isViewMode) {
+                    item.onclick = () => {
+                        collection[name] = !collection[name];
+                        localStorage.setItem('myDragonsV2', JSON.stringify(collection));
+                        render();
+                    };
+                }
+                grid.appendChild(item);
+            });
+
+            section.appendChild(title);
+            section.appendChild(grid);
+            container.appendChild(section);
+        }
+        document.getElementById('stats').innerText = `Всего собрано: ${totalOwned} из ${allDragons.length}`;
+    }
+
+    // Поиск по всем категориям
+    document.getElementById('search').oninput = (e) => {
+        const val = e.target.value.toLowerCase();
+        document.querySelectorAll('.dragon-item').forEach(el => {
+            el.classList.toggle('hidden', !el.innerText.toLowerCase().includes(val));
+        });
+        // Прячем пустые категории при поиске
+        document.querySelectorAll('.category-section').forEach(sec => {
+            const hasVisible = sec.querySelectorAll('.dragon-item:not(.hidden)').length > 0;
+            sec.classList.toggle('hidden', !hasVisible);
+        });
+    };
+
+    render();
 </script>
 
 </body>
